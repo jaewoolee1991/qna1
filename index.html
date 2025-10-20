@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>교과목 Q&A 게시판</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📚 교과목 Q&A 게시판</h1>
+            <p class="subtitle">궁금한 교과목을 질문하고 답변을 공유하세요</p>
+        </header>
+
+        <!-- 질문 작성 폼 -->
+        <div class="question-form-container">
+            <h2>질문하기</h2>
+            <form id="questionForm">
+                <div class="form-group">
+                    <label for="subject">교과목</label>
+                    <select id="subject" required>
+                        <option value="">교과목을 선택하세요</option>
+                        <option value="수학">수학</option>
+                        <option value="과학">과학</option>
+                        <option value="영어">영어</option>
+                        <option value="국어">국어</option>
+                        <option value="사회">사회</option>
+                        <option value="역사">역사</option>
+                        <option value="프로그래밍">프로그래밍</option>
+                        <option value="기타">기타</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="questionTitle">질문 제목</label>
+                    <input type="text" id="questionTitle" placeholder="질문 제목을 입력하세요" required>
+                </div>
+                <div class="form-group">
+                    <label for="questionContent">질문 내용</label>
+                    <textarea id="questionContent" rows="4" placeholder="질문 내용을 상세히 입력하세요" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="authorName">작성자</label>
+                    <input type="text" id="authorName" placeholder="이름을 입력하세요" required>
+                </div>
+                <button type="submit" class="btn btn-primary">질문 등록</button>
+            </form>
+        </div>
+
+        <!-- 질문 목록 -->
+        <div class="questions-container">
+            <div class="questions-header">
+                <h2>질문 목록</h2>
+                <div class="filter-container">
+                    <label for="filterSubject">필터:</label>
+                    <select id="filterSubject">
+                        <option value="all">전체</option>
+                        <option value="수학">수학</option>
+                        <option value="과학">과학</option>
+                        <option value="영어">영어</option>
+                        <option value="국어">국어</option>
+                        <option value="사회">사회</option>
+                        <option value="역사">역사</option>
+                        <option value="프로그래밍">프로그래밍</option>
+                        <option value="기타">기타</option>
+                    </select>
+                </div>
+            </div>
+            <div id="questionsList"></div>
+        </div>
+    </div>
+
+    <!-- 답변 모달 -->
+    <div id="answerModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="modalQuestionContent"></div>
+            
+            <div class="answers-section">
+                <h3>답변 목록</h3>
+                <div id="answersList"></div>
+            </div>
+
+            <div class="answer-form-section">
+                <h3>답변 작성</h3>
+                <form id="answerForm">
+                    <div class="form-group">
+                        <label for="answerContent">답변 내용</label>
+                        <textarea id="answerContent" rows="4" placeholder="답변을 입력하세요" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="answerAuthor">작성자</label>
+                        <input type="text" id="answerAuthor" placeholder="이름을 입력하세요" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">답변 등록</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
