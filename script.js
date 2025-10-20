@@ -1,27 +1,52 @@
+// ============================================
+// 교과목 Q&A 게시판 - Firebase Firestore 연동
+// 프로젝트: qna2-ljweng
+// ============================================
+
+// Firebase 설정
+const firebaseConfig = {
+  apiKey: "AIzaSyDurskwd1mnEvN84UpX344VALtZfO117IY",
+  authDomain: "qna2-ljweng.firebaseapp.com",
+  projectId: "qna2-ljweng",
+  storageBucket: "qna2-ljweng.firebasestorage.app",
+  messagingSenderId: "747102497355",
+  appId: "1:747102497355:web:7e44d8a3bcb408a7767bce",
+  measurementId: "G-G5D1RJH9ML"
+};
+
+// Firebase 초기화
+firebase.initializeApp(firebaseConfig);
+
+// Firestore 데이터베이스 참조
+const db = firebase.firestore();
+
+console.log('Firebase 초기화 완료! 🔥');
+console.log('프로젝트 ID:', firebaseConfig.projectId);
+
 // 데이터 저장소
 let questions = [];
 let currentQuestionId = null;
 
-// 로컬 스토리지 키
-const STORAGE_KEY = 'qna_board_data';
+// Firestore 컬렉션 참조
+const questionsCollection = db.collection('questions');
 
 // 페이지 로드 시 초기화
 document.addEventListener('DOMContentLoaded', function() {
-    loadFromLocalStorage();
-    displayQuestions();
+    console.log('✅ 페이지 로드 완료');
+    loadFromFirestore();
     setupEventListeners();
 });
 
 // 이벤트 리스너 설정
 function setupEventListeners() {
     // 질문 등록 폼
-    document.getElementById('questionForm').addEventListener('submit', handleQuestionSubmit);
+    document.getElementById('questionForm').addEventListener('submit', handleQuestionSub
     
     // 답변 등록 폼
-    document.getElementById('answerForm').addEventListener('submit', handleAnswerSubmit);
+    document.getElementById('answerForm').addEventListener('submit', handleAnswerSubmit)
     
     // 필터 변경
-    document.getElementById('filterSubject').addEventListener('change', displayQuestions);
+    document.getElementById('filterSubject').addEventListener('change', displayQuestions
     
     // 모달 닫기
     document.querySelector('.close').addEventListener('click', closeModal);
@@ -34,56 +59,142 @@ function setupEventListeners() {
 }
 
 // 질문 등록 처리
-function handleQuestionSubmit(e) {
+async function handleQuestionSubmit(e) {
     e.preventDefault();
     
     const question = {
-        id: Date.now(),
         subject: document.getElementById('subject').value,
         title: document.getElementById('questionTitle').value,
         content: document.getElementById('questionContent').value,
         author: document.getElementById('authorName').value,
         date: new Date().toISOString(),
-        answers: []
+        answers: [],
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
     };
     
-    questions.unshift(question); // 최신 질문을 맨 앞에 추가
-    saveToLocalStorage();
-    displayQuestions();
-    
-    // 폼 초기화
-    document.getElementById('questionForm').reset();
-    
-    // 성공 메시지
-    showNotification('질문이 등록되었습니다!');
+    try {
+        console.log('📝 질문 등록 시도:', question.title);
+        
+        // Firestore에 저장
+        const docRef = await questionsCollection.add(question);
+        question.id = docRef.id;
+        
+        console.log('✅ 질문 등록 성공:', docRef.id);
+        
+        // 폼 초기화
+        document.getElementById('questionForm').reset();
+        
+        // 성공 메시지
+        showNotification('질문이 등록되었습니다! 🎉');
+        
+        // 질문 목록 새로고침
+        await loadFromFirestore();
+    } catch (error) {
+        console.error('❌ 질문 등록 실패:', error);
+        showNotification('질문 등록에 실패했습니다. 다시 시도해주세요.', 'error');
+    }
 }
 
 // 답변 등록 처리
-function handleAnswerSubmit(e) {
+async function handleAnswerSubmit(e) {
     e.preventDefault();
     
     const answer = {
-        id: Date.now(),
+        id: Date.now().toString(),
         content: document.getElementById('answerContent').value,
         author: document.getElementById('answerAuthor').value,
         date: new Date().toISOString()
     };
     
-    const question = questions.find(q => q.id === currentQuestionId);
-    if (question) {
-        question.answers.push(answer);
-        saveToLocalStorage();
-        displayAnswers(currentQuestionId);
+    try {
+        console.log('💬 답변 등록 시도');
         
-        // 폼 초기화
-        document.getElementById('answerForm').reset();
+        // 현재 질문 찾기
+        const question = questions.find(q => q.id === currentQuestionId);
+        if (question) {
+            // 답변 배열에 추가
+            const updatedAnswers = [...(question.answers || []), answer];
+            
+            // Firestore 업데이트
+            await questionsCollection.doc(currentQuestionId).update({
+                answers: updatedAnswers
+            });
+            
+            console.log('✅ 답변 등록 성공');
+            
+            // 로컬 데이터 업데이트
+            question.answers = updatedAnswers;
+            
+            // 폼 초기화
+            document.getElementById('answerForm').reset();
+            
+            // 답변 목록 표시
+            displayAnswers(currentQuestionId);
+            
+            // 질문 목록도 업데이트 (답변 수 변경)
+            displayQuestions();
+            
+            // 성공 메시지
+            showNotification('답변이 등록되었습니다! 💬');
+        }
+    } catch (error) {
+        console.error('❌ 답변 등록 실패:', error);
+        showNotification('답변 등록에 실패했습니다. 다시 시도해주세요.', 'error');
+    }
+}
+
+// Firestore에서 데이터 불러오기
+async function loadFromFirestore() {
+    try {
+        console.log('📥 데이터 불러오기 시작...');
         
-        // 질문 목록도 업데이트 (답변 수 변경)
+        const snapshot = await questionsCollection.orderBy('timestamp', 'desc').get();
+        questions = [];
+        
+        snapshot.forEach(doc => {
+            questions.push({
+                id: doc.id,
+                ...doc.data()
+            });
+        });
+        
+        console.log(`✅ ${questions.length}개의 질문 로드 완료`);
+        
+        displayQuestions();
+    } catch (error) {
+        console.error('❌ 데이터 로드 실패:', error);
+        console.error('에러 상세:', error.message);
+        
+        // 에러 발생 시 빈 배열 유지
+        questions = [];
         displayQuestions();
         
-        // 성공 메시지
-        showNotification('답변이 등록되었습니다!');
+        // Firestore 규칙 설정이 안 되어 있을 가능성
+        if (error.code === 'permission-denied') {
+            showNotification('❌ Firestore 보안 규칙을 설정해주세요!', 'error');
+        }
     }
+}
+
+// 실시간 데이터 동기화 (선택사항)
+function setupRealtimeListener() {
+    console.log('🔄 실시간 동기화 활성화');
+    
+    questionsCollection.orderBy('timestamp', 'desc').onSnapshot(snapshot => {
+        questions = [];
+        
+        snapshot.forEach(doc => {
+            questions.push({
+                id: doc.id,
+                ...doc.data()
+            });
+        });
+        
+        console.log(`🔄 실시간 업데이트: ${questions.length}개 질문`);
+        displayQuestions();
+    }, error => {
+        console.error('❌ 실시간 동기화 오류:', error);
+    });
 }
 
 // 질문 목록 표시
@@ -97,12 +208,12 @@ function displayQuestions() {
     }
     
     if (filteredQuestions.length === 0) {
-        questionsList.innerHTML = '<div class="empty-message">등록된 질문이 없습니다.</div>';
+        questionsList.innerHTML = '<div class="empty-message">등록된 질문이 없습니다. 첫
         return;
     }
     
     questionsList.innerHTML = filteredQuestions.map(question => `
-        <div class="question-card" onclick="openQuestionModal(${question.id})">
+        <div class="question-card" onclick="openQuestionModal('${question.id}')">
             <div class="question-header">
                 <div class="question-title">${escapeHtml(question.title)}</div>
                 <span class="subject-badge">${escapeHtml(question.subject)}</span>
@@ -112,7 +223,7 @@ function displayQuestions() {
                 <span class="author-info">
                     👤 ${escapeHtml(question.author)} · ${formatDate(question.date)}
                 </span>
-                <span class="answer-count">답변 ${question.answers.length}개</span>
+                <span class="answer-count">답변 ${question.answers ? question.answers.le
             </div>
         </div>
     `).join('');
@@ -124,6 +235,8 @@ function openQuestionModal(questionId) {
     const question = questions.find(q => q.id === questionId);
     
     if (!question) return;
+    
+    console.log('📖 질문 상세 열기:', question.title);
     
     // 질문 내용 표시
     document.getElementById('modalQuestionContent').innerHTML = `
@@ -152,8 +265,8 @@ function displayAnswers(questionId) {
     const question = questions.find(q => q.id === questionId);
     const answersList = document.getElementById('answersList');
     
-    if (!question || question.answers.length === 0) {
-        answersList.innerHTML = '<div class="empty-message">아직 답변이 없습니다. 첫 번째 답변을 작성해보세요!</div>';
+    if (!question || !question.answers || question.answers.length === 0) {
+        answersList.innerHTML = '<div class="empty-message">아직 답변이 없습니다. 첫 번
         return;
     }
     
@@ -163,9 +276,95 @@ function displayAnswers(questionId) {
             <div class="answer-meta">
                 <span>👤 ${escapeHtml(answer.author)}</span>
                 <span>${formatDate(answer.date)}</span>
+                <button class="btn-delete-answer" onclick="deleteAnswer('${answer.id}')"
+                    🗑️
+                </button>
             </div>
         </div>
     `).join('');
+}
+
+// 답변 삭제 처리
+async function deleteAnswer(answerId) {
+    if (!currentQuestionId) {
+        showNotification('삭제할 답변을 찾을 수 없습니다.', 'error');
+        return;
+    }
+    
+    // 삭제 확인
+    if (!confirm('정말로 이 답변을 삭제하시겠습니까?')) {
+        return;
+    }
+    
+    try {
+        console.log('🗑️ 답변 삭제 시도:', answerId);
+        
+        // 현재 질문 찾기
+        const question = questions.find(q => q.id === currentQuestionId);
+        if (question) {
+            // 답변 배열에서 제거
+            const updatedAnswers = (question.answers || []).filter(a => a.id !== answerI
+            
+            // Firestore 업데이트
+            await questionsCollection.doc(currentQuestionId).update({
+                answers: updatedAnswers
+            });
+            
+            console.log('✅ 답변 삭제 성공');
+            
+            // 로컬 데이터 업데이트
+            question.answers = updatedAnswers;
+            
+            // 답변 목록 다시 표시
+            displayAnswers(currentQuestionId);
+            
+            // 질문 목록도 업데이트 (답변 수 변경)
+            displayQuestions();
+            
+            // 성공 메시지
+            showNotification('답변이 삭제되었습니다.');
+        }
+    } catch (error) {
+        console.error('❌ 답변 삭제 실패:', error);
+        showNotification('답변 삭제에 실패했습니다. 다시 시도해주세요.', 'error');
+    }
+}
+
+// 질문 삭제 처리
+async function deleteQuestion() {
+    if (!currentQuestionId) {
+        showNotification('삭제할 질문을 찾을 수 없습니다.', 'error');
+        return;
+    }
+    
+    // 삭제 확인
+    if (!confirm('정말로 이 질문을 삭제하시겠습니까?\n삭제된 질문은 복구할 수 없습니다.'
+        return;
+    }
+    
+    try {
+        console.log('🗑️ 질문 삭제 시도:', currentQuestionId);
+        
+        // Firestore에서 삭제
+        await questionsCollection.doc(currentQuestionId).delete();
+        
+        console.log('✅ 질문 삭제 성공');
+        
+        // 로컬 데이터에서 제거
+        questions = questions.filter(q => q.id !== currentQuestionId);
+        
+        // 성공 메시지
+        showNotification('질문이 삭제되었습니다.');
+        
+        // 모달 닫기
+        closeModal();
+        
+        // 질문 목록 새로고침
+        displayQuestions();
+    } catch (error) {
+        console.error('❌ 질문 삭제 실패:', error);
+        showNotification('질문 삭제에 실패했습니다. 다시 시도해주세요.', 'error');
+    }
 }
 
 // 모달 닫기
@@ -176,26 +375,10 @@ function closeModal() {
     currentQuestionId = null;
 }
 
-// 로컬 스토리지에 저장
-function saveToLocalStorage() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(questions));
-}
-
-// 로컬 스토리지에서 불러오기
-function loadFromLocalStorage() {
-    const data = localStorage.getItem(STORAGE_KEY);
-    if (data) {
-        try {
-            questions = JSON.parse(data);
-        } catch (e) {
-            console.error('데이터 로드 실패:', e);
-            questions = [];
-        }
-    }
-}
-
 // 날짜 포맷팅
 function formatDate(dateString) {
+    if (!dateString) return '방금 전';
+    
     const date = new Date(dateString);
     const now = new Date();
     const diff = now - date;
@@ -218,27 +401,33 @@ function formatDate(dateString) {
 
 // HTML 이스케이프 (XSS 방지)
 function escapeHtml(text) {
+    if (!text) return '';
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
 }
 
 // 알림 메시지 표시
-function showNotification(message) {
-    // 간단한 알림 표시
+function showNotification(message, type = 'success') {
     const notification = document.createElement('div');
     notification.textContent = message;
+    
+    const bgColor = type === 'error' 
+        ? 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'
+        : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+    
     notification.style.cssText = `
         position: fixed;
         top: 20px;
         right: 20px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: ${bgColor};
         color: white;
         padding: 15px 25px;
         border-radius: 8px;
         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         z-index: 10000;
         animation: slideInRight 0.3s ease;
+        max-width: 300px;
     `;
     
     document.body.appendChild(notification);
@@ -246,9 +435,11 @@ function showNotification(message) {
     setTimeout(() => {
         notification.style.animation = 'slideOutRight 0.3s ease';
         setTimeout(() => {
-            document.body.removeChild(notification);
+            if (notification.parentNode) {
+                document.body.removeChild(notification);
+            }
         }, 300);
-    }, 2000);
+    }, 3000);
 }
 
 // 애니메이션 CSS 추가
@@ -277,3 +468,7 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
+// 실시간 동기화 활성화 (원하는 경우 주석 해제)
+// setupRealtimeListener();
+
+console.log('🚀 Q&A 게시판 초기화 완료! (qna2-ljweng)');
