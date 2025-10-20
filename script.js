@@ -40,13 +40,13 @@ document.addEventListener('DOMContentLoaded', function() {
 // 이벤트 리스너 설정
 function setupEventListeners() {
     // 질문 등록 폼
-    document.getElementById('questionForm').addEventListener('submit', handleQuestionSub
+    document.getElementById('questionForm').addEventListener('submit', handleQuestionSubmit);
     
     // 답변 등록 폼
-    document.getElementById('answerForm').addEventListener('submit', handleAnswerSubmit)
+    document.getElementById('answerForm').addEventListener('submit', handleAnswerSubmit);
     
     // 필터 변경
-    document.getElementById('filterSubject').addEventListener('change', displayQuestions
+    document.getElementById('filterSubject').addEventListener('change', displayQuestions);
     
     // 모달 닫기
     document.querySelector('.close').addEventListener('click', closeModal);
@@ -208,7 +208,7 @@ function displayQuestions() {
     }
     
     if (filteredQuestions.length === 0) {
-        questionsList.innerHTML = '<div class="empty-message">등록된 질문이 없습니다. 첫
+        questionsList.innerHTML = '<div class="empty-message">등록된 질문이 없습니다. 첫 번째 질문을 작성해보세요! ✨</div>';
         return;
     }
     
@@ -223,7 +223,7 @@ function displayQuestions() {
                 <span class="author-info">
                     👤 ${escapeHtml(question.author)} · ${formatDate(question.date)}
                 </span>
-                <span class="answer-count">답변 ${question.answers ? question.answers.le
+                <span class="answer-count">답변 ${question.answers ? question.answers.length : 0}개</span>
             </div>
         </div>
     `).join('');
@@ -266,7 +266,7 @@ function displayAnswers(questionId) {
     const answersList = document.getElementById('answersList');
     
     if (!question || !question.answers || question.answers.length === 0) {
-        answersList.innerHTML = '<div class="empty-message">아직 답변이 없습니다. 첫 번
+        answersList.innerHTML = '<div class="empty-message">아직 답변이 없습니다. 첫 번째 답변을 작성해보세요! 💡</div>';
         return;
     }
     
@@ -276,7 +276,7 @@ function displayAnswers(questionId) {
             <div class="answer-meta">
                 <span>👤 ${escapeHtml(answer.author)}</span>
                 <span>${formatDate(answer.date)}</span>
-                <button class="btn-delete-answer" onclick="deleteAnswer('${answer.id}')"
+                <button class="btn-delete-answer" onclick="deleteAnswer('${answer.id}')" title="답변 삭제">
                     🗑️
                 </button>
             </div>
@@ -303,7 +303,7 @@ async function deleteAnswer(answerId) {
         const question = questions.find(q => q.id === currentQuestionId);
         if (question) {
             // 답변 배열에서 제거
-            const updatedAnswers = (question.answers || []).filter(a => a.id !== answerI
+            const updatedAnswers = (question.answers || []).filter(a => a.id !== answerId);
             
             // Firestore 업데이트
             await questionsCollection.doc(currentQuestionId).update({
@@ -338,7 +338,7 @@ async function deleteQuestion() {
     }
     
     // 삭제 확인
-    if (!confirm('정말로 이 질문을 삭제하시겠습니까?\n삭제된 질문은 복구할 수 없습니다.'
+    if (!confirm('정말로 이 질문을 삭제하시겠습니까?\n삭제된 질문은 복구할 수 없습니다.')) {
         return;
     }
     

@@ -2,9 +2,9 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=devi
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>교과목 Q&A 게시판</title>
-    <meta name="description" content="교과목
+    <meta name="description" content="교과목별 질문과 답변을 공유하는 커뮤니티 게시판">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -12,7 +12,7 @@
         <!-- 헤더 -->
         <header>
             <h1>📚 교과목 Q&A 게시판</h1>
-            <p class="subtitle">궁금한 교과목
+            <p class="subtitle">궁금한 교과목을 질문하고 답변을 공유하세요</p>
         </header>
 
         <!-- 질문 작성 폼 -->
@@ -20,32 +20,32 @@
             <h2>질문하기</h2>
             <form id="questionForm">
                 <div class="form-group">
-                    <label for="subject">교과
-                    <select id="subject" requ
-                        <option value="">교과
-                        <option value="수학">
-                        <option value="과학">
-                        <option value="영어">
-                        <option value="국어">
-                        <option value="사회">
-                        <option value="역사">
-                        <option value="프로그
-                        <option value="기타">
+                    <label for="subject">교과목</label>
+                    <select id="subject" required>
+                        <option value="">교과목을 선택하세요</option>
+                        <option value="수학">수학</option>
+                        <option value="과학">과학</option>
+                        <option value="영어">영어</option>
+                        <option value="국어">국어</option>
+                        <option value="사회">사회</option>
+                        <option value="역사">역사</option>
+                        <option value="프로그래밍">프로그래밍</option>
+                        <option value="기타">기타</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="questionTitle
-                    <input type="text" id="qu
+                    <label for="questionTitle">질문 제목</label>
+                    <input type="text" id="questionTitle" placeholder="질문 제목을 입력하세요" required maxlength="200">
                 </div>
                 <div class="form-group">
-                    <label for="questionConte
-                    <textarea id="questionCon
+                    <label for="questionContent">질문 내용</label>
+                    <textarea id="questionContent" rows="4" placeholder="질문 내용을 상세히 입력하세요" required maxlength="5000"></textarea>
                 </div>
                 <div class="form-group">
-                    <label for="authorName">
-                    <input type="text" id="au
+                    <label for="authorName">작성자</label>
+                    <input type="text" id="authorName" placeholder="이름을 입력하세요" required maxlength="50">
                 </div>
-                <button type="submit" class="
+                <button type="submit" class="btn btn-primary">질문 등록</button>
             </form>
         </div>
 
@@ -53,23 +53,23 @@
         <div class="questions-container">
             <div class="questions-header">
                 <h2>질문 목록</h2>
-                <div class="filter-container"
-                    <label for="filterSubject
-                    <select id="filterSubject
-                        <option value="all">
-                        <option value="수학">
-                        <option value="과학">
-                        <option value="영어">
-                        <option value="국어">
-                        <option value="사회">
-                        <option value="역사">
-                        <option value="프로그
-                        <option value="기타">
+                <div class="filter-container">
+                    <label for="filterSubject">필터:</label>
+                    <select id="filterSubject">
+                        <option value="all">전체</option>
+                        <option value="수학">수학</option>
+                        <option value="과학">과학</option>
+                        <option value="영어">영어</option>
+                        <option value="국어">국어</option>
+                        <option value="사회">사회</option>
+                        <option value="역사">역사</option>
+                        <option value="프로그래밍">프로그래밍</option>
+                        <option value="기타">기타</option>
                     </select>
                 </div>
             </div>
             <div id="questionsList">
-                <div class="empty-message">질
+                <div class="empty-message">질문을 불러오는 중...</div>
             </div>
         </div>
     </div>
@@ -77,11 +77,11 @@
     <!-- 답변 모달 -->
     <div id="answerModal" class="modal">
         <div class="modal-content">
-            <span class="close">&times;</span
-            <div id="modalQuestionContent"></
+            <span class="close">&times;</span>
+            <div id="modalQuestionContent"></div>
             
             <div class="modal-actions">
-                <button type="button" class="
+                <button type="button" class="btn btn-danger" onclick="deleteQuestion()">🗑️ 질문 삭제</button>
             </div>
             
             <div class="answers-section">
@@ -93,24 +93,24 @@
                 <h3>답변 작성</h3>
                 <form id="answerForm">
                     <div class="form-group">
-                        <label for="answerCon
-                        <textarea id="answerC
+                        <label for="answerContent">답변 내용</label>
+                        <textarea id="answerContent" rows="4" placeholder="답변을 입력하세요" required maxlength="5000"></textarea>
                     </div>
                     <div class="form-group">
-                        <label for="answerAut
-                        <input type="text" id
+                        <label for="answerAuthor">작성자</label>
+                        <input type="text" id="answerAuthor" placeholder="이름을 입력하세요" required maxlength="50">
                     </div>
-                    <button type="submit" cla
+                    <button type="submit" class="btn btn-primary">답변 등록</button>
                 </form>
             </div>
         </div>
     </div>
 
     <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/fire
-    <script src="https://www.gstatic.com/fire
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     
-    <!-- 메인 스크립트 (Firebase 설정 포함) -
+    <!-- 메인 스크립트 (Firebase 설정 포함) -->
     <script src="script.js"></script>
 </body>
 </html>
