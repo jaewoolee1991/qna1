@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>교과목 Q&A 게시판</title>
-    <meta name="description" content="교과목별 질문과 답변을 공유하는 커뮤니티 게시판">
+    <title>현장작업현황 Q&A 게시판</title>
+    <meta name="description" content="현장작업 질문과 답변을 공유하는 커뮤니티 게시판">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
         <!-- 헤더 -->
         <header>
-            <h1>📚 교과목 Q&A 게시판</h1>
-            <p class="subtitle">궁금한 교과목을 질문하고 답변을 공유하세요</p>
+            <h1>📚 현장작업현황 Q&A 게시판</h1>
+            <p class="subtitle">궁금한 질문하고 답변을 공유하세요</p>
             <div style="margin-top: 20px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
                 <a href="upload.html" class="btn btn-secondary" style="text-decoration: none; display: inline-block;">
                     📷 현장 사진 업로드
@@ -28,16 +28,16 @@
             <h2>질문하기</h2>
             <form id="questionForm">
                 <div class="form-group">
-                    <label for="subject">교과목</label>
+                    <label for="subject">작업장</label>
                     <select id="subject" required>
-                        <option value="">교과목을 선택하세요</option>
-                        <option value="수학">수학</option>
-                        <option value="과학">과학</option>
-                        <option value="영어">영어</option>
-                        <option value="국어">국어</option>
-                        <option value="사회">사회</option>
-                        <option value="역사">역사</option>
-                        <option value="프로그래밍">프로그래밍</option>
+                        <option value="">작업장을 선택하세요</option>
+                        <option value="예천군">예천군</option>
+                        <option value="울진군">울진군</option>
+                        <option value="영양군">영양군</option>
+                        <option value="문경시">문경시</option>
+                        <option value="영주시">영주시</option>
+                        <option value="울릉군">울릉군</option>
+                        <option value="군산시">군산시</option>
                         <option value="기타">기타</option>
                     </select>
                 </div>
@@ -75,13 +75,13 @@
                     <label for="filterSubject">필터:</label>
                     <select id="filterSubject">
                         <option value="all">전체</option>
-                        <option value="수학">수학</option>
-                        <option value="과학">과학</option>
-                        <option value="영어">영어</option>
-                        <option value="국어">국어</option>
-                        <option value="사회">사회</option>
-                        <option value="역사">역사</option>
-                        <option value="프로그래밍">프로그래밍</option>
+                        <option value="예천군">예천군</option>
+                        <option value="울진군">울진군</option>
+                        <option value="영양군">영양군</option>
+                        <option value="문경시">문경시</option>
+                        <option value="영주시">영주시</option>
+                        <option value="울릉군">울릉군</option>
+                        <option value="군산시">군산시</option>
                         <option value="기타">기타</option>
                     </select>
                 </div>

@@ -213,6 +213,7 @@ async function handleUpload() {
     
     // 진행률 표시
     showProgress();
+    updateProgress(5); // 초기 진행률
     
     try {
         console.log('📤 업로드 시작...');
@@ -222,25 +223,40 @@ async function handleUpload() {
         const dateFolder = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
         const uploadId = `${timestamp}_${workerName}`;
         
-        // 각 사진을 Firebase Storage에 업로드
-        const uploadPromises = selectedPhotos.map((photo, index) => {
+        updateProgress(10); // 준비 완료
+        
+        // 각 사진을 Firebase Storage에 업로드 (진행률 추적)
+        const photoUrls = [];
+        const progressPerPhoto = 60 / selectedPhotos.length; // 10%~70% 범위에서 사진 업로드
+        const startProgress = 10;
+        
+        for (let index = 0; index < selectedPhotos.length; index++) {
+            const photo = selectedPhotos[index];
             const fileName = `photo_${index + 1}_${timestamp}.jpg`;
             const filePath = `photos/${dateFolder}/${projectName}/${uploadId}/${fileName}`;
             const storageRef = storage.ref(filePath);
             
-            return storageRef.put(photo.file).then(snapshot => {
-                console.log(`✅ 사진 ${index + 1} 업로드 완료`);
-                return snapshot.ref.getDownloadURL();
-            });
-        });
+            console.log(`📤 사진 ${index + 1}/${selectedPhotos.length} 업로드 중...`);
+            
+            // 업로드 시작
+            const snapshot = await storageRef.put(photo.file);
+            const downloadUrl = await snapshot.ref.getDownloadURL();
+            
+            photoUrls.push(downloadUrl);
+            
+            // 진행률 업데이트 (각 사진 업로드 완료 시)
+            const currentProgress = Math.round(startProgress + (index + 1) * progressPerPhoto);
+            updateProgress(currentProgress);
+            console.log(`✅ 사진 ${index + 1} 업로드 완료 (${currentProgress}%)`);
+        }
         
-        // 모든 사진 업로드 완료 대기
-        const photoUrls = await Promise.all(uploadPromises);
-        
-        updateProgress(75);
+        updateProgress(70);
         console.log('✅ 모든 사진 업로드 완료');
         
         // Firestore에 메타데이터 저장
+        updateProgress(85);
+        console.log('💾 메타데이터 저장 중...');
+        
         const uploadData = {
             workerName: workerName,
             projectName: projectName,
@@ -304,8 +320,9 @@ function resetForm() {
 
 // 진행률 표시
 function showProgress() {
-    document.getElementById('progressContainer').style.display = 'block';
-    updateProgress(0);
+    const progressContainer = document.getElementById('progressContainer');
+    progressContainer.style.display = 'block';
+    // 초기값은 호출하는 쪽에서 설정
 }
 
 function updateProgress(percent) {
