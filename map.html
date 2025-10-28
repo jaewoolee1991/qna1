@@ -318,41 +318,48 @@
 
             console.log('📍 선택된 좌표:', selectedCoords);
 
-            // 부모 창 확인
-            if (!window.opener) {
-                alert('부모 창을 찾을 수 없습니다.');
-                console.error('❌ window.opener가 null입니다.');
-                return;
-            }
-
-            if (window.opener.closed) {
-                alert('부모 창이 닫혔습니다.');
-                console.error('❌ 부모 창이 닫혀있습니다.');
-                return;
-            }
-
-            // receiveLocation 함수 확인
-            if (typeof window.opener.receiveLocation !== 'function') {
-                alert('부모 창에 receiveLocation 함수가 없습니다.');
-                console.error('❌ window.opener.receiveLocation이 함수가 아닙니다.');
-                return;
-            }
-
-            console.log('📤 부모 창으로 위치 정보 전달:', selectedCoords);
-            
+            // localStorage에 위치 정보 저장 (백업 방법)
             try {
-                // 부모 창으로 데이터 전달
-                window.opener.receiveLocation(selectedCoords);
-                console.log('✅ 위치 정보 전달 완료');
-                
-                // 잠시 대기 후 창 닫기 (부모 창에서 데이터 처리 시간 확보)
-                setTimeout(function() {
-                    window.close();
-                }, 100);
-            } catch (error) {
-                alert('위치 정보 전달 중 오류가 발생했습니다: ' + error.message);
-                console.error('❌ 위치 정보 전달 오류:', error);
+                localStorage.setItem('selectedLocation', JSON.stringify(selectedCoords));
+                localStorage.setItem('locationTimestamp', Date.now().toString());
+                console.log('💾 localStorage에 위치 정보 저장 완료');
+            } catch (e) {
+                console.error('❌ localStorage 저장 실패:', e);
             }
+
+            let locationTransferred = false;
+
+            // 방법 1: window.opener를 통한 직접 전달
+            if (window.opener && !window.opener.closed) {
+                try {
+                    if (typeof window.opener.receiveLocation === 'function') {
+                        window.opener.receiveLocation(selectedCoords);
+                        console.log('✅ window.opener를 통해 위치 정보 전달 완료');
+                        locationTransferred = true;
+                    } else {
+                        console.warn('⚠️ window.opener.receiveLocation 함수를 찾을 수 없습니다.');
+                    }
+                } catch (error) {
+                    console.error('❌ window.opener 전달 오류:', error);
+                }
+            } else {
+                console.warn('⚠️ window.opener를 사용할 수 없습니다.');
+            }
+
+            // 방법 2: 부모 창에 이벤트 트리거 (localStorage 사용)
+            if (!locationTransferred) {
+                console.log('📡 localStorage를 통한 위치 정보 전달 방식 사용');
+            }
+
+            // 창 닫기
+            console.log('🚪 지도 창을 닫습니다.');
+            setTimeout(function() {
+                window.close();
+                // 일부 브라우저에서 window.close()가 작동하지 않을 수 있음
+                if (!window.closed) {
+                    alert('위치가 설정되었습니다. 이 창을 닫아주세요.');
+                }
+            }, 200);
         }
 
         // 페이지 로드 시 지도 초기화

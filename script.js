@@ -36,6 +36,7 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('✅ 페이지 로드 완료');
     loadFromFirestore();
     setupEventListeners();
+    setupLocationListener();
 });
 
 // 이벤트 리스너 설정
@@ -457,10 +458,17 @@ function receiveLocation(location) {
         return;
     }
     
+    applyLocationToField(location, currentLocationTarget);
+}
+
+// 위치 정보를 필드에 적용
+function applyLocationToField(location, target) {
     const displayText = `위도: ${location.lat}, 경도: ${location.lon}`;
     const dataJson = JSON.stringify(location);
     
-    if (currentLocationTarget === 'question') {
+    console.log('📍 위치 적용 - 대상:', target, '위치:', displayText);
+    
+    if (target === 'question') {
         const locationField = document.getElementById('questionLocation');
         const locationDataField = document.getElementById('questionLocationData');
         
@@ -468,10 +476,12 @@ function receiveLocation(location) {
             locationField.value = displayText;
             locationDataField.value = dataJson;
             console.log('✅ 질문 위치 정보 설정 완료:', displayText);
+            showNotification('위치 정보가 설정되었습니다! 📍');
         } else {
             console.error('❌ 질문 위치 필드를 찾을 수 없습니다.');
+            showNotification('위치 필드를 찾을 수 없습니다.', 'error');
         }
-    } else if (currentLocationTarget === 'answer') {
+    } else if (target === 'answer') {
         const locationField = document.getElementById('answerLocation');
         const locationDataField = document.getElementById('answerLocationData');
         
@@ -479,17 +489,75 @@ function receiveLocation(location) {
             locationField.value = displayText;
             locationDataField.value = dataJson;
             console.log('✅ 답변 위치 정보 설정 완료:', displayText);
+            showNotification('위치 정보가 설정되었습니다! 📍');
         } else {
             console.error('❌ 답변 위치 필드를 찾을 수 없습니다.');
+            showNotification('위치 필드를 찾을 수 없습니다.', 'error');
         }
     } else {
-        console.warn('⚠️ currentLocationTarget이 설정되지 않았습니다.');
+        console.warn('⚠️ 대상이 설정되지 않았습니다:', target);
         showNotification('위치 정보 대상을 찾을 수 없습니다.', 'error');
         return;
     }
     
-    showNotification('위치 정보가 설정되었습니다! 📍');
+    // 처리 완료 후 currentLocationTarget 초기화
     currentLocationTarget = null;
+}
+
+// localStorage를 통한 위치 정보 수신 감지
+function setupLocationListener() {
+    console.log('🎧 localStorage 리스너 설정');
+    
+    // 주기적으로 localStorage 확인 (폴링 방식)
+    setInterval(function() {
+        try {
+            const savedLocation = localStorage.getItem('selectedLocation');
+            const timestamp = localStorage.getItem('locationTimestamp');
+            
+            if (savedLocation && timestamp) {
+                const now = Date.now();
+                const savedTime = parseInt(timestamp, 10);
+                
+                // 5초 이내에 저장된 데이터만 유효
+                if (now - savedTime < 5000) {
+                    const location = JSON.parse(savedLocation);
+                    
+                    console.log('📥 localStorage에서 위치 정보 감지:', location);
+                    
+                    // 위치 정보가 이미 설정되어 있지 않은 경우에만 적용
+                    if (currentLocationTarget) {
+                        applyLocationToField(location, currentLocationTarget);
+                        
+                        // 처리된 데이터 제거
+                        localStorage.removeItem('selectedLocation');
+                        localStorage.removeItem('locationTimestamp');
+                    }
+                } else if (now - savedTime > 10000) {
+                    // 10초 이상 오래된 데이터는 삭제
+                    localStorage.removeItem('selectedLocation');
+                    localStorage.removeItem('locationTimestamp');
+                }
+            }
+        } catch (e) {
+            // localStorage 접근 오류 무시
+        }
+    }, 500); // 0.5초마다 확인
+    
+    // storage 이벤트 리스너 (다른 탭/창에서의 변경 감지)
+    window.addEventListener('storage', function(e) {
+        if (e.key === 'selectedLocation' && e.newValue) {
+            try {
+                const location = JSON.parse(e.newValue);
+                console.log('📥 storage 이벤트로 위치 정보 수신:', location);
+                
+                if (currentLocationTarget) {
+                    applyLocationToField(location, currentLocationTarget);
+                }
+            } catch (error) {
+                console.error('❌ storage 이벤트 처리 오류:', error);
+            }
+        }
+    });
 }
 
 // 지도에서 위치 보기
