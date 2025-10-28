@@ -224,6 +224,9 @@
                 })
             });
 
+            // 페이지 로드 시 자동으로 현재 위치로 이동
+            initCurrentLocation();
+
             // 지도 클릭 이벤트
             map.on('click', function(evt) {
                 const coords = evt.coordinate;
@@ -328,7 +331,43 @@
             });
         }
 
-        // 현재 위치 가져오기
+        // 페이지 로드 시 현재 위치로 초기화 (자동)
+        function initCurrentLocation() {
+            if (!navigator.geolocation) {
+                console.log('ℹ️ 위치 서비스를 지원하지 않아 기본 위치를 사용합니다.');
+                return;
+            }
+
+            console.log('📍 초기 위치를 현재 위치로 설정 중...');
+
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const lon = position.coords.longitude;
+                    const lat = position.coords.latitude;
+                    const coords = ol.proj.fromLonLat([lon, lat]);
+
+                    console.log('✅ 현재 위치 감지:', lat, lon);
+
+                    // 지도 중심을 현재 위치로 이동
+                    map.getView().animate({
+                        center: coords,
+                        zoom: 15,
+                        duration: 1000
+                    });
+                },
+                function(error) {
+                    console.warn('⚠️ 현재 위치 감지 실패, 기본 위치 사용:', error.message);
+                    // 오류 발생 시 기본 위치(서울 시청) 유지
+                },
+                {
+                    enableHighAccuracy: false, // 빠른 초기화를 위해 정확도 낮춤
+                    timeout: 5000,
+                    maximumAge: 300000 // 5분 이내 캐시 허용
+                }
+            );
+        }
+
+        // 현재 위치 가져오기 (버튼 클릭용)
         function getCurrentLocation() {
             const btn = document.getElementById('currentLocationBtn');
             btn.disabled = true;
