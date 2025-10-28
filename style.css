@@ -564,6 +564,49 @@ textarea:focus {
 }
 
 /* ============================================
+   위치 입력 그룹
+   ============================================ */
+.location-input-group {
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+}
+
+.location-input-group input[type="text"] {
+    flex: 1;
+    background-color: #f8f9fa;
+}
+
+.btn-location {
+    white-space: nowrap;
+    padding: 10px 18px;
+    font-size: 0.9em;
+}
+
+.location-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.85em;
+    font-weight: 600;
+    margin-left: 8px;
+}
+
+.location-link {
+    color: #4facfe;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.3s ease;
+}
+
+.location-link:hover {
+    color: #00f2fe;
+    text-decoration: underline;
+}
+
+/* ============================================
    프린트 스타일
    ============================================ */
 @media print {

@@ -45,6 +45,16 @@
                     <label for="authorName">작성자</label>
                     <input type="text" id="authorName" placeholder="이름을 입력하세요" required maxlength="50">
                 </div>
+                <div class="form-group">
+                    <label for="questionLocation">위치 정보 (선택)</label>
+                    <div class="location-input-group">
+                        <input type="text" id="questionLocation" placeholder="위치 미설정" readonly>
+                        <input type="hidden" id="questionLocationData">
+                        <button type="button" class="btn btn-secondary btn-location" onclick="openLocationMap('question')">
+                            📍 위치 선택
+                        </button>
+                    </div>
+                </div>
                 <button type="submit" class="btn btn-primary">질문 등록</button>
             </form>
         </div>
@@ -99,6 +109,16 @@
                     <div class="form-group">
                         <label for="answerAuthor">작성자</label>
                         <input type="text" id="answerAuthor" placeholder="이름을 입력하세요" required maxlength="50">
+                    </div>
+                    <div class="form-group">
+                        <label for="answerLocation">위치 정보 (선택)</label>
+                        <div class="location-input-group">
+                            <input type="text" id="answerLocation" placeholder="위치 미설정" readonly>
+                            <input type="hidden" id="answerLocationData">
+                            <button type="button" class="btn btn-secondary btn-location" onclick="openLocationMap('answer')">
+                                📍 위치 선택
+                            </button>
+                        </div>
                     </div>
                     <button type="submit" class="btn btn-primary">답변 등록</button>
                 </form>

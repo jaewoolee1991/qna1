@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>위치 선택 - OpenLayers</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v8.2.0/ol.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Malgun Gothic', sans-serif;
+            overflow: hidden;
+        }
+
+        #map {
+            width: 100%;
+            height: calc(100vh - 60px);
+        }
+
+        .map-controls {
+            background: white;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .location-info {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .location-info h3 {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .location-info p {
+            font-size: 1em;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.95em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .info-popup {
+            background: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
+            font-size: 0.9em;
+            color: #333;
+            max-width: 250px;
+        }
+
+        .info-popup strong {
+            color: #667eea;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        /* 현재 위치 버튼 */
+        .current-location-btn {
+            position: absolute;
+            top: 70px;
+            right: 10px;
+            z-index: 1000;
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            padding: 10px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .current-location-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .current-location-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 768px) {
+            .map-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .button-group {
+                width: 100%;
+            }
+
+            .btn {
+                flex: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="map-controls">
+        <div class="location-info">
+            <h3>📍 선택된 위치</h3>
+            <p id="selectedLocation">지도를 클릭하여 위치를 선택하세요</p>
+        </div>
+        <div class="button-group">
+            <button class="btn btn-secondary" onclick="window.close()">취소</button>
+            <button class="btn btn-primary" id="confirmBtn" onclick="confirmLocation()" disabled>위치 확인</button>
+        </div>
+    </div>
+
+    <button class="current-location-btn" id="currentLocationBtn" onclick="getCurrentLocation()" title="현재 위치로 이동">
+        📍 현재 위치
+    </button>
+
+    <div id="map"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/ol@v8.2.0/dist/ol.js"></script>
+    <script>
+        let selectedCoords = null;
+        let map;
+        let markerLayer;
+
+        // 지도 초기화
+        function initMap() {
+            // 서울 시청 좌표 (기본 위치)
+            const defaultCenter = ol.proj.fromLonLat([126.9780, 37.5665]);
+
+            // 마커 레이어
+            const markerSource = new ol.source.Vector();
+            markerLayer = new ol.layer.Vector({
+                source: markerSource,
+                style: new ol.style.Style({
+                    image: new ol.style.Icon({
+                        anchor: [0.5, 1],
+                        src: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><path fill="%23667eea" d="M16 0c-5.523 0-10 4.477-10 10 0 10 10 22 10 22s10-12 10-22c0-5.523-4.477-10-10-10zm0 14c-2.209 0-4-1.791-4-4s1.791-4 4-4 4 1.791 4 4-1.791 4-4 4z"/></svg>',
+                        scale: 1.2
+                    })
+                })
+            });
+
+            // 지도 생성
+            map = new ol.Map({
+                target: 'map',
+                layers: [
+                    new ol.layer.Tile({
+                        source: new ol.source.OSM({
+                            attributions: [
+                                '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                                'Data from <a href="https://www.data.go.kr/">공공데이터포털</a>'
+                            ]
+                        })
+                    }),
+                    markerLayer
+                ],
+                view: new ol.View({
+                    center: defaultCenter,
+                    zoom: 13
+                })
+            });
+
+            // 지도 클릭 이벤트
+            map.on('click', function(evt) {
+                const coords = evt.coordinate;
+                const lonLat = ol.proj.toLonLat(coords);
+                
+                // 마커 추가
+                markerSource.clear();
+                const marker = new ol.Feature({
+                    geometry: new ol.geom.Point(coords)
+                });
+                markerSource.addFeature(marker);
+
+                // 좌표 저장
+                selectedCoords = {
+                    lon: lonLat[0].toFixed(6),
+                    lat: lonLat[1].toFixed(6)
+                };
+
+                // UI 업데이트
+                updateLocationDisplay();
+                document.getElementById('confirmBtn').disabled = false;
+
+                // 지도 중심 이동
+                map.getView().animate({
+                    center: coords,
+                    duration: 300
+                });
+            });
+        }
+
+        // 위치 표시 업데이트
+        function updateLocationDisplay() {
+            if (selectedCoords) {
+                document.getElementById('selectedLocation').innerHTML = 
+                    `위도: ${selectedCoords.lat}, 경도: ${selectedCoords.lon}`;
+            }
+        }
+
+        // 현재 위치 가져오기
+        function getCurrentLocation() {
+            const btn = document.getElementById('currentLocationBtn');
+            btn.disabled = true;
+            btn.textContent = '위치 확인 중...';
+
+            if (!navigator.geolocation) {
+                alert('브라우저에서 위치 서비스를 지원하지 않습니다.');
+                btn.disabled = false;
+                btn.textContent = '📍 현재 위치';
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const lon = position.coords.longitude;
+                    const lat = position.coords.latitude;
+                    const coords = ol.proj.fromLonLat([lon, lat]);
+
+                    // 마커 추가
+                    const markerSource = markerLayer.getSource();
+                    markerSource.clear();
+                    const marker = new ol.Feature({
+                        geometry: new ol.geom.Point(coords)
+                    });
+                    markerSource.addFeature(marker);
+
+                    // 지도 이동
+                    map.getView().animate({
+                        center: coords,
+                        zoom: 15,
+                        duration: 500
+                    });
+
+                    // 좌표 저장
+                    selectedCoords = {
+                        lon: lon.toFixed(6),
+                        lat: lat.toFixed(6)
+                    };
+
+                    updateLocationDisplay();
+                    document.getElementById('confirmBtn').disabled = false;
+
+                    btn.disabled = false;
+                    btn.textContent = '📍 현재 위치';
+                },
+                function(error) {
+                    alert('위치 정보를 가져올 수 없습니다.\n' + error.message);
+                    btn.disabled = false;
+                    btn.textContent = '📍 현재 위치';
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                }
+            );
+        }
+
+        // 위치 확인
+        function confirmLocation() {
+            if (!selectedCoords) {
+                alert('위치를 선택해주세요.');
+                return;
+            }
+
+            // 부모 창으로 데이터 전달
+            if (window.opener && !window.opener.closed) {
+                window.opener.receiveLocation(selectedCoords);
+                window.close();
+            } else {
+                alert('부모 창을 찾을 수 없습니다.');
+            }
+        }
+
+        // 페이지 로드 시 지도 초기화
+        window.addEventListener('load', initMap);
+
+        // 키보드 이벤트 (ESC로 창 닫기)
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                window.close();
+            }
+        });
+    </script>
+</body>
+</html>
+

@@ -26,6 +26,7 @@ console.log('프로젝트 ID:', firebaseConfig.projectId);
 // 데이터 저장소
 let questions = [];
 let currentQuestionId = null;
+let currentLocationTarget = null; // 'question' 또는 'answer'
 
 // Firestore 컬렉션 참조
 const questionsCollection = db.collection('questions');
@@ -62,6 +63,10 @@ function setupEventListeners() {
 async function handleQuestionSubmit(e) {
     e.preventDefault();
     
+    // 위치 정보 가져오기
+    const locationData = document.getElementById('questionLocationData').value;
+    const location = locationData ? JSON.parse(locationData) : null;
+    
     const question = {
         subject: document.getElementById('subject').value,
         title: document.getElementById('questionTitle').value,
@@ -69,6 +74,7 @@ async function handleQuestionSubmit(e) {
         author: document.getElementById('authorName').value,
         date: new Date().toISOString(),
         answers: [],
+        location: location, // 위치 정보 추가
         timestamp: firebase.firestore.FieldValue.serverTimestamp()
     };
     
@@ -83,6 +89,8 @@ async function handleQuestionSubmit(e) {
         
         // 폼 초기화
         document.getElementById('questionForm').reset();
+        document.getElementById('questionLocation').value = '';
+        document.getElementById('questionLocationData').value = '';
         
         // 성공 메시지
         showNotification('질문이 등록되었습니다! 🎉');
@@ -99,11 +107,16 @@ async function handleQuestionSubmit(e) {
 async function handleAnswerSubmit(e) {
     e.preventDefault();
     
+    // 위치 정보 가져오기
+    const locationData = document.getElementById('answerLocationData').value;
+    const location = locationData ? JSON.parse(locationData) : null;
+    
     const answer = {
         id: Date.now().toString(),
         content: document.getElementById('answerContent').value,
         author: document.getElementById('answerAuthor').value,
-        date: new Date().toISOString()
+        date: new Date().toISOString(),
+        location: location // 위치 정보 추가
     };
     
     try {
@@ -127,6 +140,8 @@ async function handleAnswerSubmit(e) {
             
             // 폼 초기화
             document.getElementById('answerForm').reset();
+            document.getElementById('answerLocation').value = '';
+            document.getElementById('answerLocationData').value = '';
             
             // 답변 목록 표시
             displayAnswers(currentQuestionId);
@@ -222,6 +237,7 @@ function displayQuestions() {
             <div class="question-meta">
                 <span class="author-info">
                     👤 ${escapeHtml(question.author)} · ${formatDate(question.date)}
+                    ${question.location ? `<span class="location-badge">📍 위치 포함</span>` : ''}
                 </span>
                 <span class="answer-count">답변 ${question.answers ? question.answers.length : 0}개</span>
             </div>
@@ -239,6 +255,13 @@ function openQuestionModal(questionId) {
     console.log('📖 질문 상세 열기:', question.title);
     
     // 질문 내용 표시
+    const locationHtml = question.location ? 
+        `<div style="margin-top: 10px;">
+            📍 <a href="#" onclick="viewLocationOnMap(${question.location.lat}, ${question.location.lon}); return false;" class="location-link">
+                위치 보기 (위도: ${question.location.lat}, 경도: ${question.location.lon})
+            </a>
+        </div>` : '';
+    
     document.getElementById('modalQuestionContent').innerHTML = `
         <div class="question-header">
             <div class="question-title">${escapeHtml(question.title)}</div>
@@ -250,6 +273,7 @@ function openQuestionModal(questionId) {
                 👤 ${escapeHtml(question.author)} · ${formatDate(question.date)}
             </span>
         </div>
+        ${locationHtml}
     `;
     
     // 답변 목록 표시
@@ -270,18 +294,28 @@ function displayAnswers(questionId) {
         return;
     }
     
-    answersList.innerHTML = question.answers.map(answer => `
-        <div class="answer-card">
-            <div class="answer-content">${escapeHtml(answer.content)}</div>
-            <div class="answer-meta">
-                <span>👤 ${escapeHtml(answer.author)}</span>
-                <span>${formatDate(answer.date)}</span>
-                <button class="btn-delete-answer" onclick="deleteAnswer('${answer.id}')" title="답변 삭제">
-                    🗑️
-                </button>
+    answersList.innerHTML = question.answers.map(answer => {
+        const locationHtml = answer.location ? 
+            `<div style="margin-top: 8px; font-size: 0.9em;">
+                📍 <a href="#" onclick="viewLocationOnMap(${answer.location.lat}, ${answer.location.lon}); return false;" class="location-link">
+                    위치 보기
+                </a>
+            </div>` : '';
+        
+        return `
+            <div class="answer-card">
+                <div class="answer-content">${escapeHtml(answer.content)}</div>
+                <div class="answer-meta">
+                    <span>👤 ${escapeHtml(answer.author)}</span>
+                    <span>${formatDate(answer.date)}</span>
+                    <button class="btn-delete-answer" onclick="deleteAnswer('${answer.id}')" title="답변 삭제">
+                        🗑️
+                    </button>
+                </div>
+                ${locationHtml}
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 // 답변 삭제 처리
@@ -372,7 +406,71 @@ function closeModal() {
     document.getElementById('answerModal').style.display = 'none';
     document.body.style.overflow = 'auto';
     document.getElementById('answerForm').reset();
+    document.getElementById('answerLocation').value = '';
+    document.getElementById('answerLocationData').value = '';
     currentQuestionId = null;
+}
+
+// ============================================
+// 위치 관련 함수
+// ============================================
+
+// 지도 창 열기
+function openLocationMap(target) {
+    currentLocationTarget = target;
+    const width = 800;
+    const height = 600;
+    const left = (screen.width - width) / 2;
+    const top = (screen.height - height) / 2;
+    
+    window.open(
+        'map.html',
+        'LocationMap',
+        `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+    );
+}
+
+// 지도에서 위치 정보 받기 (map.html에서 호출)
+function receiveLocation(location) {
+    console.log('📍 위치 정보 수신:', location);
+    
+    if (currentLocationTarget === 'question') {
+        document.getElementById('questionLocation').value = 
+            `위도: ${location.lat}, 경도: ${location.lon}`;
+        document.getElementById('questionLocationData').value = 
+            JSON.stringify(location);
+    } else if (currentLocationTarget === 'answer') {
+        document.getElementById('answerLocation').value = 
+            `위도: ${location.lat}, 경도: ${location.lon}`;
+        document.getElementById('answerLocationData').value = 
+            JSON.stringify(location);
+    }
+    
+    showNotification('위치 정보가 설정되었습니다! 📍');
+    currentLocationTarget = null;
+}
+
+// 지도에서 위치 보기
+function viewLocationOnMap(lat, lon) {
+    const width = 800;
+    const height = 600;
+    const left = (screen.width - width) / 2;
+    const top = (screen.height - height) / 2;
+    
+    // 구글 지도로 열기
+    const googleMapsUrl = `https://www.google.com/maps?q=${lat},${lon}&z=15`;
+    
+    // 또는 OpenStreetMap으로 열기
+    const osmUrl = `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}&zoom=15`;
+    
+    // 사용자 선택
+    const choice = confirm('위치를 확인하시겠습니까?\n\n확인: Google Maps\n취소: OpenStreetMap');
+    
+    window.open(
+        choice ? googleMapsUrl : osmUrl,
+        'ViewLocation',
+        `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+    );
 }
 
 // 날짜 포맷팅
