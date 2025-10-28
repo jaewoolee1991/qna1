@@ -417,33 +417,75 @@ function closeModal() {
 
 // 지도 창 열기
 function openLocationMap(target) {
+    console.log('🗺️ 지도 창 열기 - 대상:', target);
+    
+    if (target !== 'question' && target !== 'answer') {
+        console.error('❌ 잘못된 대상:', target);
+        showNotification('위치 선택 대상이 올바르지 않습니다.', 'error');
+        return;
+    }
+    
     currentLocationTarget = target;
     const width = 800;
     const height = 600;
     const left = (screen.width - width) / 2;
     const top = (screen.height - height) / 2;
     
-    window.open(
+    const mapWindow = window.open(
         'map.html',
         'LocationMap',
         `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
     );
+    
+    if (!mapWindow) {
+        console.error('❌ 지도 창을 열 수 없습니다. 팝업 차단을 확인하세요.');
+        showNotification('지도 창을 열 수 없습니다. 팝업 차단을 해제해주세요.', 'error');
+        currentLocationTarget = null;
+    } else {
+        console.log('✅ 지도 창이 열렸습니다.');
+    }
 }
 
 // 지도에서 위치 정보 받기 (map.html에서 호출)
 function receiveLocation(location) {
     console.log('📍 위치 정보 수신:', location);
+    console.log('📍 currentLocationTarget:', currentLocationTarget);
+    
+    if (!location || !location.lat || !location.lon) {
+        console.error('❌ 잘못된 위치 데이터:', location);
+        showNotification('위치 정보가 올바르지 않습니다.', 'error');
+        return;
+    }
+    
+    const displayText = `위도: ${location.lat}, 경도: ${location.lon}`;
+    const dataJson = JSON.stringify(location);
     
     if (currentLocationTarget === 'question') {
-        document.getElementById('questionLocation').value = 
-            `위도: ${location.lat}, 경도: ${location.lon}`;
-        document.getElementById('questionLocationData').value = 
-            JSON.stringify(location);
+        const locationField = document.getElementById('questionLocation');
+        const locationDataField = document.getElementById('questionLocationData');
+        
+        if (locationField && locationDataField) {
+            locationField.value = displayText;
+            locationDataField.value = dataJson;
+            console.log('✅ 질문 위치 정보 설정 완료:', displayText);
+        } else {
+            console.error('❌ 질문 위치 필드를 찾을 수 없습니다.');
+        }
     } else if (currentLocationTarget === 'answer') {
-        document.getElementById('answerLocation').value = 
-            `위도: ${location.lat}, 경도: ${location.lon}`;
-        document.getElementById('answerLocationData').value = 
-            JSON.stringify(location);
+        const locationField = document.getElementById('answerLocation');
+        const locationDataField = document.getElementById('answerLocationData');
+        
+        if (locationField && locationDataField) {
+            locationField.value = displayText;
+            locationDataField.value = dataJson;
+            console.log('✅ 답변 위치 정보 설정 완료:', displayText);
+        } else {
+            console.error('❌ 답변 위치 필드를 찾을 수 없습니다.');
+        }
+    } else {
+        console.warn('⚠️ currentLocationTarget이 설정되지 않았습니다.');
+        showNotification('위치 정보 대상을 찾을 수 없습니다.', 'error');
+        return;
     }
     
     showNotification('위치 정보가 설정되었습니다! 📍');

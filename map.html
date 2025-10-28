@@ -308,17 +308,50 @@
 
         // 위치 확인
         function confirmLocation() {
+            console.log('✅ 위치 확인 버튼 클릭');
+            
             if (!selectedCoords) {
                 alert('위치를 선택해주세요.');
+                console.warn('⚠️ 선택된 위치가 없습니다.');
                 return;
             }
 
-            // 부모 창으로 데이터 전달
-            if (window.opener && !window.opener.closed) {
-                window.opener.receiveLocation(selectedCoords);
-                window.close();
-            } else {
+            console.log('📍 선택된 좌표:', selectedCoords);
+
+            // 부모 창 확인
+            if (!window.opener) {
                 alert('부모 창을 찾을 수 없습니다.');
+                console.error('❌ window.opener가 null입니다.');
+                return;
+            }
+
+            if (window.opener.closed) {
+                alert('부모 창이 닫혔습니다.');
+                console.error('❌ 부모 창이 닫혀있습니다.');
+                return;
+            }
+
+            // receiveLocation 함수 확인
+            if (typeof window.opener.receiveLocation !== 'function') {
+                alert('부모 창에 receiveLocation 함수가 없습니다.');
+                console.error('❌ window.opener.receiveLocation이 함수가 아닙니다.');
+                return;
+            }
+
+            console.log('📤 부모 창으로 위치 정보 전달:', selectedCoords);
+            
+            try {
+                // 부모 창으로 데이터 전달
+                window.opener.receiveLocation(selectedCoords);
+                console.log('✅ 위치 정보 전달 완료');
+                
+                // 잠시 대기 후 창 닫기 (부모 창에서 데이터 처리 시간 확보)
+                setTimeout(function() {
+                    window.close();
+                }, 100);
+            } catch (error) {
+                alert('위치 정보 전달 중 오류가 발생했습니다: ' + error.message);
+                console.error('❌ 위치 정보 전달 오류:', error);
             }
         }
 
