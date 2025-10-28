@@ -259,7 +259,7 @@ function openQuestionModal(questionId) {
     const locationHtml = question.location ? 
         `<div style="margin-top: 10px;">
             📍 <a href="#" onclick="viewLocationOnMap(${question.location.lat}, ${question.location.lon}); return false;" class="location-link">
-                위치 보기 (위도: ${question.location.lat}, 경도: ${question.location.lon})
+                ${question.location.address || `위치 보기 (위도: ${question.location.lat}, 경도: ${question.location.lon})`}
             </a>
         </div>` : '';
     
@@ -299,7 +299,7 @@ function displayAnswers(questionId) {
         const locationHtml = answer.location ? 
             `<div style="margin-top: 8px; font-size: 0.9em;">
                 📍 <a href="#" onclick="viewLocationOnMap(${answer.location.lat}, ${answer.location.lon}); return false;" class="location-link">
-                    위치 보기
+                    ${answer.location.address || '위치 보기'}
                 </a>
             </div>` : '';
         
@@ -463,7 +463,10 @@ function receiveLocation(location) {
 
 // 위치 정보를 필드에 적용
 function applyLocationToField(location, target) {
-    const displayText = `위도: ${location.lat}, 경도: ${location.lon}`;
+    let displayText = `위도: ${location.lat}, 경도: ${location.lon}`;
+    if (location.address) {
+        displayText += `\n📍 ${location.address}`;
+    }
     const dataJson = JSON.stringify(location);
     
     console.log('📍 위치 적용 - 대상:', target, '위치:', displayText);

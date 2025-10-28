@@ -50,6 +50,19 @@
             font-weight: 600;
         }
 
+        .address-info {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+            line-height: 1.4;
+        }
+
+        .loading-address {
+            font-size: 0.85em;
+            color: #999;
+            font-style: italic;
+        }
+
         .button-group {
             display: flex;
             gap: 10px;
@@ -152,6 +165,7 @@
         <div class="location-info">
             <h3>📍 선택된 위치</h3>
             <p id="selectedLocation">지도를 클릭하여 위치를 선택하세요</p>
+            <div id="addressInfo" class="address-info"></div>
         </div>
         <div class="button-group">
             <button class="btn btn-secondary" onclick="window.close()">취소</button>
@@ -168,6 +182,7 @@
     <script src="https://cdn.jsdelivr.net/npm/ol@v8.2.0/dist/ol.js"></script>
     <script>
         let selectedCoords = null;
+        let selectedAddress = null;
         let map;
         let markerLayer;
 
@@ -236,6 +251,9 @@
                     center: coords,
                     duration: 300
                 });
+
+                // 주소 정보 가져오기
+                getAddressFromCoords(lonLat[1], lonLat[0]);
             });
         }
 
@@ -245,6 +263,69 @@
                 document.getElementById('selectedLocation').innerHTML = 
                     `위도: ${selectedCoords.lat}, 경도: ${selectedCoords.lon}`;
             }
+        }
+
+        // 역지오코딩: 좌표를 주소로 변환
+        function getAddressFromCoords(lat, lon) {
+            const addressInfoDiv = document.getElementById('addressInfo');
+            addressInfoDiv.innerHTML = '<span class="loading-address">주소 조회 중...</span>';
+            selectedAddress = null;
+
+            // Nominatim API 사용 (OpenStreetMap)
+            const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1&accept-language=ko`;
+
+            fetch(url, {
+                headers: {
+                    'User-Agent': 'QnA Board Location Selector'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('📍 주소 정보:', data);
+                
+                if (data && data.address) {
+                    // 한국 주소 형식으로 변환
+                    const addr = data.address;
+                    let addressText = '';
+                    
+                    // 한국 주소 구성
+                    if (addr.country_code === 'kr') {
+                        const parts = [];
+                        
+                        if (addr.city || addr.province) {
+                            parts.push(addr.province || addr.city);
+                        }
+                        if (addr.borough || addr.suburb) {
+                            parts.push(addr.borough || addr.suburb);
+                        }
+                        if (addr.neighbourhood || addr.quarter) {
+                            parts.push(addr.neighbourhood || addr.quarter);
+                        }
+                        if (addr.road || addr.street) {
+                            parts.push(addr.road || addr.street);
+                        }
+                        if (addr.house_number) {
+                            parts.push(addr.house_number);
+                        }
+                        
+                        addressText = parts.join(' ');
+                    }
+                    
+                    // 주소가 없거나 짧으면 display_name 사용
+                    if (!addressText || addressText.length < 5) {
+                        addressText = data.display_name;
+                    }
+                    
+                    selectedAddress = addressText;
+                    addressInfoDiv.innerHTML = `📍 ${addressText}`;
+                } else {
+                    addressInfoDiv.innerHTML = '<span style="color: #999;">주소 정보를 찾을 수 없습니다</span>';
+                }
+            })
+            .catch(error => {
+                console.error('❌ 주소 조회 실패:', error);
+                addressInfoDiv.innerHTML = '<span style="color: #999;">주소 조회 실패</span>';
+            });
         }
 
         // 현재 위치 가져오기
@@ -290,6 +371,9 @@
                     updateLocationDisplay();
                     document.getElementById('confirmBtn').disabled = false;
 
+                    // 주소 정보 가져오기
+                    getAddressFromCoords(lat, lon);
+
                     btn.disabled = false;
                     btn.textContent = '📍 현재 위치';
                 },
@@ -320,7 +404,12 @@
 
             // localStorage에 위치 정보 저장 (백업 방법)
             try {
-                localStorage.setItem('selectedLocation', JSON.stringify(selectedCoords));
+                const locationData = {
+                    lat: selectedCoords.lat,
+                    lon: selectedCoords.lon,
+                    address: selectedAddress || ''
+                };
+                localStorage.setItem('selectedLocation', JSON.stringify(locationData));
                 localStorage.setItem('locationTimestamp', Date.now().toString());
                 console.log('💾 localStorage에 위치 정보 저장 완료');
             } catch (e) {
@@ -329,11 +418,18 @@
 
             let locationTransferred = false;
 
+            // 주소 정보 포함
+            const locationData = {
+                lat: selectedCoords.lat,
+                lon: selectedCoords.lon,
+                address: selectedAddress || ''
+            };
+
             // 방법 1: window.opener를 통한 직접 전달
             if (window.opener && !window.opener.closed) {
                 try {
                     if (typeof window.opener.receiveLocation === 'function') {
-                        window.opener.receiveLocation(selectedCoords);
+                        window.opener.receiveLocation(locationData);
                         console.log('✅ window.opener를 통해 위치 정보 전달 완료');
                         locationTransferred = true;
                     } else {
