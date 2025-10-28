@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>📷 현장 사진 업로드</title>
+    <link rel="stylesheet" href="upload-style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 헤더 -->
+        <header>
+            <h1>📷 현장 사진 업로드</h1>
+            <p class="subtitle">4장의 사진을 촬영하거나 선택하세요</p>
+        </header>
+
+        <!-- 업로드 폼 -->
+        <div class="upload-form-container">
+            <!-- 작업 정보 입력 -->
+            <div class="info-section">
+                <h2>📋 작업 정보</h2>
+                
+                <div class="form-group">
+                    <label for="workerName">작업자 이름 *</label>
+                    <input type="text" id="workerName" placeholder="이름을 입력하세요" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="projectName">프로젝트명 *</label>
+                    <input type="text" id="projectName" placeholder="예: 250211-영덕(27)-설치" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="workNote">작업 메모</label>
+                    <textarea id="workNote" rows="3" placeholder="작업 내용이나 특이사항을 입력하세요 (선택사항)"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="locationInfo">📍 위치 정보 (선택)</label>
+                    <div class="location-input-group">
+                        <input type="text" id="locationInfo" placeholder="위치 미설정" readonly>
+                        <input type="hidden" id="locationData">
+                        <button type="button" class="btn btn-location" onclick="openLocationMap()">
+                            📍 위치 선택
+                        </button>
+                    </div>
+                    <small class="helper-text">현재 위치로 자동 설정되거나 지도에서 선택할 수 있습니다</small>
+                </div>
+            </div>
+
+            <!-- 사진 업로드 섹션 -->
+            <div class="photos-section">
+                <h2>📸 사진 업로드 (4장 필수)</h2>
+                <p class="photo-count">선택된 사진: <span id="photoCount">0</span> / 4</p>
+
+                <!-- 사진 선택 버튼 -->
+                <div class="photo-actions">
+                    <label for="photoInput" class="btn btn-primary btn-large">
+                        📷 사진 촬영/선택
+                    </label>
+                    <input type="file" 
+                           id="photoInput" 
+                           accept="image/*" 
+                           capture="environment"
+                           multiple
+                           style="display: none;">
+                </div>
+
+                <!-- 사진 미리보기 그리드 -->
+                <div class="photo-grid" id="photoGrid">
+                    <div class="photo-slot empty" data-index="0">
+                        <div class="slot-content">
+                            <span class="slot-icon">📷</span>
+                            <span class="slot-number">1</span>
+                        </div>
+                    </div>
+                    <div class="photo-slot empty" data-index="1">
+                        <div class="slot-content">
+                            <span class="slot-icon">📷</span>
+                            <span class="slot-number">2</span>
+                        </div>
+                    </div>
+                    <div class="photo-slot empty" data-index="2">
+                        <div class="slot-content">
+                            <span class="slot-icon">📷</span>
+                            <span class="slot-number">3</span>
+                        </div>
+                    </div>
+                    <div class="photo-slot empty" data-index="3">
+                        <div class="slot-content">
+                            <span class="slot-icon">📷</span>
+                            <span class="slot-number">4</span>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="helper-text">💡 각 사진을 클릭하면 삭제할 수 있습니다</p>
+            </div>
+
+            <!-- 업로드 버튼 -->
+            <div class="submit-section">
+                <button type="button" class="btn btn-upload btn-large" id="uploadBtn" disabled>
+                    ⬆️ 사진 업로드하기
+                </button>
+                <button type="button" class="btn btn-secondary btn-large" onclick="window.location.href='gallery.html'">
+                    🖼️ 갤러리 보기
+                </button>
+            </div>
+
+            <!-- 진행률 표시 -->
+            <div class="progress-container" id="progressContainer" style="display: none;">
+                <h3>업로드 중...</h3>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <p class="progress-text" id="progressText">0%</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    
+    <!-- 메인 스크립트 -->
+    <script src="upload-script.js"></script>
+</body>
+</html>
+

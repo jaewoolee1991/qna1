@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>🖼️ 사진 갤러리</title>
+    <link rel="stylesheet" href="gallery-style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 헤더 -->
+        <header>
+            <h1>🖼️ 업로드 사진 갤러리</h1>
+            <p class="subtitle">업로드된 현장 사진들을 확인하세요</p>
+        </header>
+
+        <!-- 네비게이션 -->
+        <div class="nav-buttons">
+            <button class="btn btn-primary" onclick="window.location.href='upload.html'">
+                📷 사진 업로드하기
+            </button>
+            <button class="btn btn-secondary" onclick="window.location.href='index.html'">
+                📚 Q&A 게시판
+            </button>
+        </div>
+
+        <!-- 필터 및 검색 -->
+        <div class="filter-section">
+            <div class="filter-group">
+                <label for="filterProject">프로젝트</label>
+                <select id="filterProject" onchange="applyFilters()">
+                    <option value="all">전체</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="filterWorker">작업자</label>
+                <select id="filterWorker" onchange="applyFilters()">
+                    <option value="all">전체</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="filterDate">날짜</label>
+                <input type="date" id="filterDate" onchange="applyFilters()">
+            </div>
+
+            <button class="btn btn-clear" onclick="clearFilters()">필터 초기화</button>
+        </div>
+
+        <!-- 통계 정보 -->
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-number" id="totalUploads">0</div>
+                <div class="stat-label">총 업로드</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalPhotos">0</div>
+                <div class="stat-label">총 사진</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalProjects">0</div>
+                <div class="stat-label">프로젝트</div>
+            </div>
+        </div>
+
+        <!-- 갤러리 목록 -->
+        <div class="gallery-container" id="galleryContainer">
+            <div class="loading-message">📥 데이터를 불러오는 중...</div>
+        </div>
+    </div>
+
+    <!-- 사진 상세보기 모달 -->
+    <div id="photoModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closePhotoModal()">&times;</span>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    
+    <!-- 갤러리 스크립트 -->
+    <script src="gallery-script.js"></script>
+</body>
+</html>
+
