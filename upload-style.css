@@ -348,6 +348,31 @@ header h1 {
     border: 2px solid #667eea;
 }
 
+/* 디버그 정보 */
+.debug-info {
+    margin-top: 25px;
+    padding: 20px;
+    background: #fff3cd;
+    border-radius: 12px;
+    border: 2px solid #ffc107;
+}
+
+.debug-info h3 {
+    color: #856404;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+}
+
+.debug-info p {
+    color: #856404;
+    margin-bottom: 8px;
+    font-size: 0.95em;
+}
+
+.debug-info span {
+    font-weight: 600;
+}
+
 .progress-container h3 {
     color: #667eea;
     margin-bottom: 15px;

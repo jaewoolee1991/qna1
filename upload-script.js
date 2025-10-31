@@ -2,15 +2,15 @@
 // 현장 사진 업로드 앱 - Firebase 연동
 // ============================================
 
-// Firebase 설정 (기존 프로젝트와 동일)
+// Firebase 설정 (field-photo 프로젝트)
 const firebaseConfig = {
-  apiKey: "AIzaSyDurskwd1mnEvN84UpX344VALtZfO117IY",
-  authDomain: "qna2-ljweng.firebaseapp.com",
-  projectId: "qna2-ljweng",
-  storageBucket: "qna2-ljweng.firebasestorage.app",
-  messagingSenderId: "747102497355",
-  appId: "1:747102497355:web:7e44d8a3bcb408a7767bce",
-  measurementId: "G-G5D1RJH9ML"
+  apiKey: "AIzaSyBNhJq9nvHPXxTPo54Zd3LqVWQslOjLW-M",
+  authDomain: "field-photo.firebaseapp.com",
+  projectId: "field-photo",
+  storageBucket: "field-photo.firebasestorage.app",
+  messagingSenderId: "522484967053",
+  appId: "1:522484967053:web:b08e01cfa75079478aa4c4",
+  measurementId: "G-Z1CLE192CP"
 };
 
 // Firebase 초기화
@@ -19,6 +19,8 @@ const db = firebase.firestore();
 const storage = firebase.storage();
 
 console.log('🔥 Firebase 초기화 완료!');
+console.log('📦 프로젝트:', firebaseConfig.projectId);
+console.log('☁️ Storage:', firebaseConfig.storageBucket);
 
 // 전역 변수
 let selectedPhotos = []; // 최대 4장
@@ -27,9 +29,38 @@ let currentLocationData = null;
 // 페이지 로드 시 초기화
 document.addEventListener('DOMContentLoaded', function() {
     console.log('✅ 페이지 로드 완료');
+    console.log('🔍 Firebase 연결 상태 확인...');
+    
+    // Firebase Storage 연결 테스트
+    try {
+        const testRef = storage.ref('test');
+        console.log('✅ Firebase Storage 연결 성공');
+    } catch (error) {
+        console.error('❌ Firebase Storage 연결 실패:', error);
+    }
+    
+    // Firestore 연결 테스트
+    db.collection('photoUploads').limit(1).get()
+        .then(() => {
+            console.log('✅ Firestore 연결 성공');
+            updateDebugInfo('firestore', true);
+        })
+        .catch(error => {
+            console.error('❌ Firestore 연결 실패:', error);
+            updateDebugInfo('firestore', false);
+            showNotification('⚠️ 데이터베이스 연결 실패. Firebase 설정을 확인하세요.', 'error');
+        });
+    
+    updateDebugInfo('storage', true);
+    
     setupEventListeners();
     setupLocationListener();
     tryGetCurrentLocation();
+    
+    // 디버그 정보 표시 (URL에 ?debug 추가 시)
+    if (window.location.search.includes('debug')) {
+        document.getElementById('debugInfo').style.display = 'block';
+    }
 });
 
 // 이벤트 리스너 설정
@@ -163,6 +194,29 @@ function removePhoto(index) {
 // 사진 개수 업데이트
 function updatePhotoCount() {
     document.getElementById('photoCount').textContent = selectedPhotos.length;
+    updateDebugInfo('photoCount', selectedPhotos.length);
+}
+
+// 디버그 정보 업데이트
+function updateDebugInfo(type, value) {
+    if (type === 'storage') {
+        const elem = document.getElementById('storageStatus');
+        if (elem) {
+            elem.textContent = value ? '✅ 연결됨' : '❌ 실패';
+            elem.style.color = value ? 'green' : 'red';
+        }
+    } else if (type === 'firestore') {
+        const elem = document.getElementById('firestoreStatus');
+        if (elem) {
+            elem.textContent = value ? '✅ 연결됨' : '❌ 실패';
+            elem.style.color = value ? 'green' : 'red';
+        }
+    } else if (type === 'photoCount') {
+        const elem = document.getElementById('debugPhotoCount');
+        if (elem) {
+            elem.textContent = value;
+        }
+    }
 }
 
 // 업로드 버튼 상태 업데이트
@@ -291,8 +345,27 @@ async function handleUpload() {
         
     } catch (error) {
         console.error('❌ 업로드 실패:', error);
+        console.error('에러 상세:', error.message);
+        console.error('에러 코드:', error.code);
+        
         hideProgress();
-        showNotification('업로드에 실패했습니다. 다시 시도해주세요.', 'error');
+        
+        let errorMessage = '업로드에 실패했습니다. ';
+        
+        // 에러 타입별 메시지
+        if (error.code === 'storage/unauthorized') {
+            errorMessage += 'Firebase Storage 권한이 없습니다. 보안 규칙을 확인하세요.';
+        } else if (error.code === 'storage/canceled') {
+            errorMessage += '업로드가 취소되었습니다.';
+        } else if (error.code === 'storage/unknown') {
+            errorMessage += '알 수 없는 오류가 발생했습니다.';
+        } else if (error.code === 'permission-denied') {
+            errorMessage += 'Firestore 권한이 없습니다. 보안 규칙을 확인하세요.';
+        } else {
+            errorMessage += '다시 시도해주세요.';
+        }
+        
+        showNotification(errorMessage, 'error');
         
         // 버튼 복구
         uploadBtn.disabled = false;

@@ -2,15 +2,15 @@
 // 사진 갤러리 - Firebase 연동
 // ============================================
 
-// Firebase 설정
+// Firebase 설정 (field-photo 프로젝트)
 const firebaseConfig = {
-  apiKey: "AIzaSyDurskwd1mnEvN84UpX344VALtZfO117IY",
-  authDomain: "qna2-ljweng.firebaseapp.com",
-  projectId: "qna2-ljweng",
-  storageBucket: "qna2-ljweng.firebasestorage.app",
-  messagingSenderId: "747102497355",
-  appId: "1:747102497355:web:7e44d8a3bcb408a7767bce",
-  measurementId: "G-G5D1RJH9ML"
+  apiKey: "AIzaSyBNhJq9nvHPXxTPo54Zd3LqVWQslOjLW-M",
+  authDomain: "field-photo.firebaseapp.com",
+  projectId: "field-photo",
+  storageBucket: "field-photo.firebasestorage.app",
+  messagingSenderId: "522484967053",
+  appId: "1:522484967053:web:b08e01cfa75079478aa4c4",
+  measurementId: "G-Z1CLE192CP"
 };
 
 // Firebase 초기화
@@ -19,6 +19,8 @@ const db = firebase.firestore();
 const storage = firebase.storage();
 
 console.log('🔥 Firebase 초기화 완료!');
+console.log('📦 프로젝트:', firebaseConfig.projectId);
+console.log('☁️ Storage:', firebaseConfig.storageBucket);
 
 // 전역 변수
 let allUploads = [];
@@ -220,9 +222,12 @@ function openUploadDetail(uploadId) {
     // 사진 그리드
     const photosHtml = upload.photoUrls && upload.photoUrls.length > 0 ?
         upload.photoUrls.map((url, index) => `
-            <div class="photo-item" onclick="openPhotoViewer('${uploadId}', ${index})">
-                <img src="${url}" alt="사진 ${index + 1}" loading="lazy">
+            <div class="photo-item">
+                <img src="${url}" alt="사진 ${index + 1}" loading="lazy" onclick="openPhotoViewer('${uploadId}', ${index})">
                 <div class="photo-number">${index + 1}</div>
+                <button class="photo-download-btn" onclick="event.stopPropagation(); downloadPhoto('${uploadId}', ${index})" title="사진 다운로드">
+                    ⬇️
+                </button>
             </div>
         `).join('') :
         '<p>사진이 없습니다.</p>';
@@ -257,6 +262,9 @@ function openUploadDetail(uploadId) {
         </div>
         
         <div class="detail-actions">
+            <button class="btn btn-primary" onclick="downloadAllPhotos('${uploadId}')">
+                📥 전체 다운로드
+            </button>
             <button class="btn btn-danger" onclick="confirmDelete('${uploadId}')">
                 🗑️ 삭제
             </button>
@@ -280,6 +288,69 @@ function openPhotoViewer(uploadId, photoIndex) {
     
     // 새 창으로 사진 열기
     window.open(photoUrl, '_blank');
+}
+
+// 개별 사진 다운로드
+async function downloadPhoto(uploadId, photoIndex) {
+    const upload = allUploads.find(u => u.id === uploadId);
+    if (!upload || !upload.photoUrls) return;
+    
+    try {
+        const photoUrl = upload.photoUrls[photoIndex];
+        const fileName = `${upload.projectName}_사진${photoIndex + 1}.jpg`;
+        
+        console.log(`📥 사진 다운로드 시작: ${fileName}`);
+        
+        // fetch로 이미지 다운로드
+        const response = await fetch(photoUrl);
+        const blob = await response.blob();
+        
+        // Blob을 다운로드
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // 메모리 해제
+        URL.revokeObjectURL(link.href);
+        
+        console.log(`✅ 사진 다운로드 완료: ${fileName}`);
+        showNotification('사진이 다운로드되었습니다.');
+        
+    } catch (error) {
+        console.error('❌ 사진 다운로드 실패:', error);
+        showNotification('사진 다운로드에 실패했습니다.', 'error');
+    }
+}
+
+// 전체 사진 일괄 다운로드
+async function downloadAllPhotos(uploadId) {
+    const upload = allUploads.find(u => u.id === uploadId);
+    if (!upload || !upload.photoUrls) return;
+    
+    if (!confirm(`${upload.photoUrls.length}장의 사진을 다운로드하시겠습니까?`)) {
+        return;
+    }
+    
+    try {
+        console.log('📥 전체 사진 다운로드 시작...');
+        showNotification('사진을 다운로드하는 중...');
+        
+        for (let i = 0; i < upload.photoUrls.length; i++) {
+            await downloadPhoto(uploadId, i);
+            // 각 다운로드 사이에 약간의 지연
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
+        console.log('✅ 전체 사진 다운로드 완료');
+        showNotification(`${upload.photoUrls.length}장의 사진이 다운로드되었습니다.`);
+        
+    } catch (error) {
+        console.error('❌ 전체 사진 다운로드 실패:', error);
+        showNotification('일부 사진 다운로드에 실패했습니다.', 'error');
+    }
 }
 
 // 삭제 확인

@@ -1,17 +1,17 @@
 // ============================================
 // 현장작업현황 Q&A 게시판 - Firebase Firestore 연동
-// 프로젝트: qna2-ljweng
+// 프로젝트: field-photo
 // ============================================
 
-// Firebase 설정
+// Firebase 설정 (field-photo 프로젝트)
 const firebaseConfig = {
-  apiKey: "AIzaSyDurskwd1mnEvN84UpX344VALtZfO117IY",
-  authDomain: "qna2-ljweng.firebaseapp.com",
-  projectId: "qna2-ljweng",
-  storageBucket: "qna2-ljweng.firebasestorage.app",
-  messagingSenderId: "747102497355",
-  appId: "1:747102497355:web:7e44d8a3bcb408a7767bce",
-  measurementId: "G-G5D1RJH9ML"
+  apiKey: "AIzaSyBNhJq9nvHPXxTPo54Zd3LqVWQslOjLW-M",
+  authDomain: "field-photo.firebaseapp.com",
+  projectId: "field-photo",
+  storageBucket: "field-photo.firebasestorage.app",
+  messagingSenderId: "522484967053",
+  appId: "1:522484967053:web:b08e01cfa75079478aa4c4",
+  measurementId: "G-Z1CLE192CP"
 };
 
 // Firebase 초기화
@@ -20,8 +20,9 @@ firebase.initializeApp(firebaseConfig);
 // Firestore 데이터베이스 참조
 const db = firebase.firestore();
 
-console.log('Firebase 초기화 완료! 🔥');
-console.log('프로젝트 ID:', firebaseConfig.projectId);
+console.log('🔥 Firebase 초기화 완료!');
+console.log('📦 프로젝트:', firebaseConfig.projectId);
+console.log('☁️ Storage:', firebaseConfig.storageBucket);
 
 // 데이터 저장소
 let questions = [];
